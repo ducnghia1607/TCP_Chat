@@ -92,6 +92,20 @@ void handle_login(int conn_socket, Account *acc_list);
 /**
  * Search user by conn_socket
  * @param conn_socket socket kết nối đến client
+ * @param pkg package
+ */
+void sv_add_friend(int conn_socket, Package *pkg);
+
+void sv_accept_friend_request(int conn_socket, Package *pkg);
+
+void sv_delete_friend(int conn_socket, Package *pkg);
+
+void sv_get_friends_list(int conn_socket, Package *pkg);
+char *removeNewline(char *inputString);
+
+/**
+ * Search user by conn_socket
+ * @param conn_socket socket kết nối đến client
  * @param acc_list danh sách tài khoản
  */
 int search_user(int conn_socket);

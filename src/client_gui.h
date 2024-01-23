@@ -20,6 +20,8 @@
 #define TAKEN_ACC_NOTIF "Tài khoản đã tồn tại ! Vui lòng nhập tên tài khoản khác"
 #define SIGNUP_SUCC_NOTIF "Đăng ký tài khoản thành công !"
 #define INVALID_RECEIVER_NOTIF "Thất bại!\nNgười nhận không online hoặc không tồn tại."
+#define NOT_ONLINE_NOTIF "Thất bại ! Người nhận không online"
+#define NOT_FOUND_USER_NOTIF "Thất bại ! Người nhận không tồn tại"
 #define MAKE_GROUP_SUCC_NOTIF "Tạo nhóm mới thành công!\nTên nhóm mới của bạn là: "
 #define GROUP_NOT_FOUND_NOTIF "Vào phòng chat thất bại!\nNhóm không tồn tại hoặc bạn không là thành viên của nhóm này."
 #define NOT_IN_GROUP_ROOM_NOTIF "Thất bại!\nBạn đang không ở trong phòng chat của nhóm nào."
@@ -31,6 +33,7 @@
 #define INVITE_FRIEND_NOTIF "Chú ý!\nNgười dùng \"%s\" đã thêm bạn vào nhóm \"%s\"."
 #define LEAVE_GROUP_SUCC_NOTIF "Rời nhóm thành công!"
 #define NEW_MESSAGES_NOTIF "------------Tin nhắn mới------------"
+#define ADD_FRIEND_SUCC_NOTIF "Gửi lời mời kết bạn thành công !"
 
 //* builder for loading views
 GtkBuilder *builder;
@@ -64,6 +67,22 @@ GtkWidget *recv_msg_sw;
 GtkWidget *recv_msg_tv;
 GtkWidget *send_entry;
 GtkWidget *send_btn;
+GtkWidget *show_list_friend_btn;
+GtkWidget *friend_request_btn;
+
+// Friend
+GtkWidget *add_friend_btn;
+GtkWidget *delete_friend_btn;
+GtkWidget *exit_friend_btn;
+GtkWidget *friend_name_entry;
+
+// Message Dialog
+GtkWidget *message_entry;
+GtkWidget *exit_notif_btn;
+
+// Notification friend request
+GtkWidget *accept_friend_request_btn;
+GtkWidget *decline_friend_request_btn;
 
 //* receiver username dialog
 GtkWidget *receiver_username_dialog;
@@ -98,6 +117,24 @@ GtkWidget *group_info_tv;
 GtkWidget *group_info_btn_box;
 GtkWidget *group_info_confirm_btn;
 
+// * friend dialog
+GtkWidget *friend_dialog;
+GtkWidget *friend_box;
+GtkWidget *friend_name_box;
+GtkWidget *friend_name_entry;
+GtkWidget *friend_btn_box;
+GtkWidget *add_friend_btn;
+GtkWidget *delete_friend_btn;
+GtkWidget *exit_friend_btn;
+
+// friend request dialog
+GtkWidget *friend_request_dialog;
+GtkWidget *friend_request_box;
+GtkWidget *friend_request_btn_box;
+GtkWidget *accept_friend_request_btn;
+GtkWidget *decline_friend_request_btn;
+GtkWidget *friend_request_text;
+
 //* signal handlers
 void on_login_btn_clicked(GtkButton *btn, gpointer data);
 void on_signup_btn_clicked(GtkButton *btn, gpointer data);
@@ -119,6 +156,16 @@ void on_join_group_join_btn_clicked(GtkButton *btn, gpointer data);
 
 void on_invite_to_group_confirm_btn_clicked(GtkButton *btn, gpointer data);
 
+// Friend section
+void on_friend_request_btn_clicked(GtkButton *btn, gpointer data);
+void on_show_list_friend_btn_clicked(GtkButton *btn, gpointer data);
+void on_add_friend_btn_clicked(GtkButton *btn, gpointer data);
+void on_delete_friend_btn_clicked(GtkButton *btn, gpointer data);
+void on_exit_friend_btn_clicked(GtkButton *btn, gpointer data);
+void on_exit_notif_btn_clicked(GtkButton *btn, gpointer data);
+void on_accept_friend_request_btn_clicked(GtkButton *btn, gpointer data);
+void on_decline_friend_request_btn_clicked(GtkButton *btn, gpointer data);
+
 //* utility functions
 void view_chat_history();
 void see_chat(Package *pkg);
@@ -137,6 +184,11 @@ void show_receiver_username_dialog(int *client_socket_pt);
 void show_join_group_dialog(int *client_socket_pt);
 void show_invite_to_group_dialog(int *client_socket_pt);
 void show_group_info_dialog();
+
+void show_friend_dialog(int *client_socket_pt);
+void show_friend_request_dialog(int *client_socket_pt, Package *pkg);
+
+gboolean recv_friend_request(gpointer data);
 
 gpointer recv_handler(gpointer data);
 gboolean recv_show_user(gpointer data);

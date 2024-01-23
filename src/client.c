@@ -223,159 +223,6 @@ int check_public_key(int client_socket, char *username)
     }
 }
 
-// void user_use(int client_socket)
-// {
-// printf("Login successfully!\n");
-// int login = 1;
-// int choice, result;
-// Package pkg;
-
-// pthread_t read_st;
-// if (pthread_create(&read_st, NULL, read_msg, (void *)&client_socket) < 0)
-// {
-//     report_err(ERR_CREATE_THREAD);
-//     exit(0);
-// }
-// pthread_detach(read_st);
-
-// see_active_user(client_socket);
-
-// while (login)
-// {
-
-//     user_menu();
-//     printf("Your choice: \n");
-//     scanf("%d", &choice);
-//     clear_stdin_buff();
-
-// switch (choice)
-// {
-// case 1:
-//     private_chat(client_socket);
-//     break;
-
-// case 2:
-//     chat_all(client_socket);
-//     break;
-
-// case 3:
-//     login = 0;
-//     pkg.ctrl_signal = LOG_OUT;
-//     // strcpy(pkg.sender, my_username);
-//     send(client_socket, &pkg, sizeof(pkg), 0);
-//     strcpy(my_username, "x");
-//     strcpy(curr_group_name, "x");
-//     curr_group_id = -1;
-//     sleep(1);
-//     break;
-// case 4:
-//     see_active_user(client_socket);
-//     break;
-// 17/01/2023
-// case 5:
-//     group_chat_init(client_socket);
-//     break;
-// default:
-//     printf("Ban nhap sai roi !\n");
-//     break;
-// }
-// }
-// }
-
-// void *read_msg(void *param)
-// {
-//     int *c_socket = (int *)param;
-//     int client_socket = *c_socket;
-//     // printf("\nmysoc: %d\n", client_socket);
-//     // int client_socket = my_socket;
-//     Package pkg;
-//     while (1)
-//     {
-//         recv(client_socket, &pkg, sizeof(pkg), 0);
-//         // printf("receive %d from server\n", pkg.ctrl_signal);
-//         switch (pkg.ctrl_signal)
-//         {
-//         case SHOW_USER:
-//             printf("Current online users: %s \n", pkg.msg);
-//             break;
-
-//         case PRIVATE_CHAT:
-//             printf("%s: %s\n", pkg.sender, pkg.msg);
-//             break;
-
-//         case CHAT_ALL:
-//             printf("%s to all: %s\n", pkg.sender, pkg.msg);
-//             break;
-
-//         case ERR_INVALID_RECEIVER:
-//             report_err(ERR_INVALID_RECEIVER);
-//             break;
-//         case MSG_SENT_SUCC:
-//             printf("Message sent!\n");
-//             break;
-//         case GROUP_CHAT_INIT:
-//             printf("%s\n", pkg.msg);
-//             break;
-//         case SHOW_GROUP:
-//             printf("Your group: \n%s \n", pkg.msg);
-//             break;
-
-//         case MSG_MAKE_GROUP_SUCC:
-//             printf("Your new group: %s \n", pkg.msg);
-//             break;
-//         case JOIN_GROUP_SUCC:
-//             printf("Current group: %s \n", pkg.msg);
-//             strcpy(curr_group_name, pkg.msg);
-//             curr_group_id = pkg.group_id;
-//             join_succ = 1;
-//             break;
-//         case INVITE_FRIEND:
-//             printf("Attention: %s \n", pkg.msg);
-//             break;
-//         case ERR_GROUP_NOT_FOUND:
-//             report_err(ERR_GROUP_NOT_FOUND);
-//             break;
-//         case ERR_IVITE_MYSELF:
-//             report_err(ERR_IVITE_MYSELF);
-//             break;
-//         case ERR_USER_NOT_FOUND:
-//             report_err(ERR_USER_NOT_FOUND);
-//             break;
-//         case ERR_FULL_MEM:
-//             report_err(ERR_FULL_MEM);
-//             break;
-//         case INVITE_FRIEND_SUCC:
-//             printf("%s\n", pkg.msg);
-//             break;
-//         case GROUP_CHAT:
-//             if (curr_group_id == pkg.group_id)
-//             {
-//                 printf("%s: %s\n", pkg.sender, pkg.msg);
-//             }
-//             else
-//             {
-//                 printf("%s sent to Group_%d: %s\n", pkg.sender, pkg.group_id, pkg.msg);
-//             }
-//             break;
-//         case SHOW_GROUP_NAME:
-//             printf("GROUP NAME: %s\n", pkg.msg);
-//             break;
-//         case SHOW_GROUP_MEM:
-//             printf("%s\n", pkg.msg);
-//             break;
-//         case LEAVE_GROUP_SUCC:
-//             printf("%s\n", pkg.msg);
-//             break;
-//         case LOG_OUT:
-//             sleep(1);
-//             pthread_exit(NULL);
-//             break;
-//         default:
-//             break;
-//         }
-//     }
-// }
-
 void see_active_user(int client_socket)
 {
     Package pkg;
@@ -383,13 +230,39 @@ void see_active_user(int client_socket)
     send(client_socket, &pkg, sizeof(pkg), 0);
 
     // sleep(1);
-
     // recv(client_socket, &pkg, sizeof(pkg), 0);
 }
 
 void make_done(int msg)
 {
     doing = msg;
+}
+
+int add_friend(int client_socket)
+{
+    Package pkg;
+
+    // sprintf(pkg.msg, "%s %s", username, password);
+    // printf("Hello %s", pkg.msg);
+    // send(client_socket, &pkg, sizeof(pkg), 0);
+    while (1)
+    {
+        /* code */
+        recv(client_socket, &pkg, sizeof(pkg), 0);
+        printf("Hello CODE %d", pkg.ctrl_signal);
+        if (pkg.ctrl_signal != 0)
+            break;
+    }
+
+    return pkg.ctrl_signal;
+}
+
+int delete_friend(int client_socket)
+{
+    Package pkg;
+    recv(client_socket, &pkg, sizeof(pkg), 0);
+    printf("Hello CODE %d", pkg.ctrl_signal);
+    return pkg.ctrl_signal;
 }
 
 int check_receiver(int client_socket, char *receiver)
@@ -490,41 +363,6 @@ void chat_all(int client_socket)
         // sleep(1);
     }
 }
-// 17/01/2023
-//  xu ly lua chon trong group chat menu
-// void group_chat_init(int client_socket)
-// {
-//     Package pkg;
-//     pkg.ctrl_signal = GROUP_CHAT_INIT;
-//     send(client_socket, &pkg, sizeof(pkg), 0);
-//     // xu ly
-//     int choice = 0;
-
-//     while (1)
-//     {
-//         sleep(1);
-
-//         group_chat_menu();
-//         printf("Your choice: \n");
-//         scanf("%d", &choice);
-//         clear_stdin_buff();
-
-//         switch (choice)
-//         {
-//         case 1:
-//             show_group(client_socket);
-//             break;
-//         case 2:
-//             new_group(client_socket);
-//             break;
-//         case 3:
-//             join_group(client_socket);
-//             break;
-//         default:
-//             return;
-//         }
-//     }
-// }
 
 char *group_msg_encrypt(char *msg, char *key)
 {

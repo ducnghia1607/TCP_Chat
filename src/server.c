@@ -8,7 +8,7 @@
 Active_user user[MAX_USER];
 Group group[MAX_GROUP];
 Account *acc_list;
-
+char *my_username;
 Public_key_users pub[512];
 int pubkey_count = 0;
 
@@ -64,13 +64,11 @@ void make_server()
 {
 
     int listen_socket;
-
     acc_list = read_account_list();
     listen_socket = create_listen_socket();
     for (int i = 0; i < MAX_USER; i++)
     {
         user[i].socket = -1;
-        // 17/01/2023
         for (int j = 0; j < MAX_GROUP; j++)
             user[i].group_id[j] = -1;
     }
@@ -84,7 +82,7 @@ void make_server()
     }
 
     printf("Server created\n");
-
+    create_friends_table();
     while (1)
     {
 
@@ -133,22 +131,12 @@ void *pre_login_srv(void *param)
 
 void handle_login(int conn_socket, Account *acc_list)
 {
-    acc_list = read_account_list();
 
     char username[USERNAME_SIZE];
     char password[PASSWORD_SIZE];
     Package pkg;
     Account *target_acc;
     int result;
-
-    // recv(conn_socket, &pkg, sizeof(pkg), 0);
-    // strcpy(username, pkg.msg);
-
-    // pkg.ctrl_signal = RECV_SUCC;
-    // send(conn_socket, &pkg, sizeof(pkg), 0);
-
-    // recv(conn_socket, &pkg, sizeof(pkg), 0);
-    // strcpy(password, pkg.msg);
 
     recv(conn_socket, &pkg, sizeof(pkg), 0);
     sscanf(pkg.msg, "%s %s", username, password);
@@ -184,7 +172,8 @@ void handle_login(int conn_socket, Account *acc_list)
     {
         printf("login success\n");
         target_acc->is_signed_in = 1;
-
+        my_username = username;
+        printf("my username: %s\n", my_username);
         for (int i = 0; i < MAX_USER; i++)
         {
             if (user[i].socket < 0)
@@ -213,7 +202,6 @@ void handle_login(int conn_socket, Account *acc_list)
 
 void handle_signup(int conn_socket, Account *acc_list)
 {
-    acc_list = read_account_list();
     char username[USERNAME_SIZE];
     char password[PASSWORD_SIZE];
     Package pkg;
@@ -225,7 +213,6 @@ void handle_signup(int conn_socket, Account *acc_list)
     target_acc = find_account(acc_list, username);
     if (target_acc)
     {
-        // printf("Name : %s %s", target_acc->username, target_acc->password);
         result = TAKEN_ACC;
     }
     else
@@ -243,13 +230,6 @@ void handle_signup(int conn_socket, Account *acc_list)
 
     pkg.ctrl_signal = result;
     send(conn_socket, &pkg, sizeof(pkg), 0);
-    // if (result == LOGIN_SUCC)
-    //     sv_user_use(conn_socket);
-    // pkg.ctrl_signal = RECV_SUCC;
-    // send(conn_socket, &pkg, sizeof(pkg), 0);
-
-    // recv(conn_socket, &pkg, sizeof(pkg), 0);
-    // strcpy(password, pkg.msg);
 
     printf("%s\n", username);
     printf("%s\n", password);
@@ -316,6 +296,24 @@ void sv_user_use(int conn_socket)
         case LEAVE_GROUP:
             sv_leave_group(conn_socket, &pkg);
             break;
+
+        case ADD_FRIEND:
+            sv_add_friend(conn_socket, &pkg);
+            break;
+
+        case DELETE_FRIEND:
+            sv_delete_friend(conn_socket, &pkg);
+            break;
+
+        case ACCEPT_FRIEND_REQUEST:
+            printf("IN ACCEPT_FRIEND_REQUEST\n");
+            printf("Package %s %s ", pkg.sender, pkg.receiver);
+            sv_accept_friend_request(conn_socket, &pkg);
+            break;
+
+        case GET_FRIENDS_LIST:
+            sv_get_friends_list(conn_socket, &pkg);
+            break;
         default:
             break;
         }
@@ -357,6 +355,136 @@ void sv_user_use(int conn_socket)
             break;
         }
     }
+}
+
+void sv_add_friend(int conn_socket, Package *pkg)
+{
+    Account *target_acc;
+    int is_online = 0;
+    int index = 0;
+    target_acc = find_account(acc_list, pkg->receiver);
+
+    if (target_acc)
+    {
+        index = sv_search_id_user(user, pkg->receiver);
+        printf("index : %d\n", index);
+        if (index == -1)
+        {
+            pkg->ctrl_signal = NOT_ONLINE;
+            send(conn_socket, pkg, sizeof(*pkg), 0);
+        }
+        else
+        {
+            pkg->ctrl_signal = MSG_SENT_SUCC;
+            send(conn_socket, pkg, sizeof(*pkg), 0);
+            int socket_receiver = user[index].socket;
+            printf("index: %d socket_receiver=%d\n", index, socket_receiver);
+
+            pkg->ctrl_signal = SEND_FRIEND_REQUEST;
+            printf(" Sender : %s Receiver : %s ", pkg->sender, pkg->receiver);
+            send(socket_receiver, pkg, sizeof(*pkg), 0);
+        }
+    }
+    else
+    {
+        // Khong tim thay user
+        pkg->ctrl_signal = ERR_INVALID_RECEIVER;
+        send(conn_socket, pkg, sizeof(*pkg), 0);
+    }
+}
+
+void sv_delete_friend(int conn_socket, Package *pkg)
+{
+    Account *target_acc;
+    int index = 0;
+    target_acc = find_account(acc_list, pkg->receiver);
+    if (target_acc)
+    {
+        pkg->ctrl_signal = ACCEPT_DELETE_FRIEND;
+        send(conn_socket, pkg, sizeof(*pkg), 0);
+    }
+    else
+    {
+        // Khong tim thay user
+        pkg->ctrl_signal = ERR_INVALID_RECEIVER;
+        send(conn_socket, pkg, sizeof(*pkg), 0);
+    }
+}
+
+void sv_accept_friend_request(int conn_socket, Package *pkg)
+{
+
+    save_friend(pkg->sender, pkg->receiver);
+    // int index = sv_search_id_user(user, pkg->sender);
+    // pkg->ctrl_signal = ACCEPT_FRIEND_REQUEST;
+    // send(user[index].socket, pkg, sizeof(*pkg), 0);
+}
+
+void sv_get_friends_list(int conn_socket, Package *pkg)
+{
+    char *friends[50];
+    char *username = pkg->msg;
+    char *friends_list = get_friends_list(username);
+    int num_of_friends = 0;
+    char line1[10];
+    char line2[120];
+
+    char *curLine = friends_list;
+    char *nextLine = strchr(curLine, '\n');
+    if (nextLine)
+        *nextLine = '\0'; // temporarily terminate the current line
+    strcpy(line1, curLine);
+    if (nextLine)
+        *nextLine = '\n'; // then restore newline-char, just to be tidy
+    curLine = nextLine ? (nextLine + 1) : NULL;
+
+    num_of_friends = *((int *)line1);
+    printf("num_of_friends:%d\n", num_of_friends);
+    int num = 0;
+    while (curLine)
+    {
+        char *nextLine = strchr(curLine, '\n');
+        if (nextLine)
+            *nextLine = '\0'; // temporarily terminate the current line
+        printf("curLine=[%s*****]\n", curLine);
+        friends[num] = removeNewline(curLine);
+        num++;
+        if (nextLine)
+            *nextLine = '\n'; // then restore newline-char, just to be tidy
+        curLine = nextLine ? (nextLine + 1) : NULL;
+    }
+
+    char msg[512] = {0};
+    char *status;
+    Account *target_acc;
+    for (int i = 0; i < num; i++)
+    {
+        // printf("In target");
+        target_acc = find_account(acc_list, friends[i]);
+        if (target_acc)
+        {
+
+            printf("In target account");
+            if (target_acc->is_signed_in == 1)
+            {
+                status = "Online";
+            }
+            else
+            {
+                status = "Offline";
+            }
+            strcat(msg, friends[i]);
+            strcat(msg, " ");
+            strcat(msg, status);
+            strcat(msg, "\n");
+        }
+    }
+
+    printf("\nmessage: %s\n", msg);
+    // free(target_acc);
+    // free(status);
+    strcpy(pkg->msg, msg);
+    send(conn_socket, pkg, sizeof(*pkg), 0);
 }
 
 void sv_active_user(int conn_socket, Package *pkg)
@@ -410,7 +538,6 @@ void send_public_key(int client_socket, char *receiver)
         send(client_socket, &pkg, sizeof(pkg), 0);
         return;
     }
-    // strcpy(pkg.sender, my_username);
 
     pkg.ctrl_signal = SEND_PUBLIC_KEY;
     memcpy(pkg.msg, &user_key->public_key->modulus, sizeof(user_key->public_key->modulus));
@@ -880,6 +1007,33 @@ void sv_logout(int conn_socket, Package *pkg)
     send(conn_socket, pkg, sizeof(*pkg), 0);
 }
 
+char *removeNewline(char *inputString)
+{
+    // Kiểm tra xem chuỗi đầu vào có tồn tại không
+    if (inputString == NULL)
+    {
+        return NULL;
+    }
+
+    // Tìm vị trí của ký tự ' ' trong chuỗi
+    char *newlinePos = strchr(inputString, ' ');
+
+    // Nếu '\n' không được tìm thấy, trả về ngay lập tức
+    if (newlinePos == NULL)
+    {
+        return inputString;
+    }
+
+    // Tính chiều dài của chuỗi mới (loại bỏ '\n')
+    size_t newLength = newlinePos - inputString;
+
+    // Tạo một chuỗi mới và sao chép phần không chứa '\n'
+    char *resultString = (char *)malloc(newLength + 1); // +1 cho ký tự kết thúc chuỗi '\0'
+    strncpy(resultString, inputString, newLength);
+    resultString[newLength] = '\0'; // Đảm bảo chuỗi kết thúc đúng cách
+
+    return resultString;
+}
 // main
 int main()
 {

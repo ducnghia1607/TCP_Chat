@@ -36,14 +36,6 @@ void write_to_file(Account *list)
 
 void add_to_list(Account *list, Account *new_acc)
 {
-
-    // while(lastNode-> next != NULL){
-    //     lastNode = lastNode->next;
-    //     if(acc == NULL){
-    //         acc->next = new_acc;
-    //     }
-    // }
-
     // if head is NULL, it is an empty list
     if (list == NULL)
         list = new_acc;
@@ -77,7 +69,7 @@ Account *read_account_list()
 
     char username[USERNAME_SIZE + 1];
     char password[PASSWORD_SIZE + 1];
-    int status;
+    int is_signed_in;
 
     if (fp)
     {
@@ -86,7 +78,7 @@ Account *read_account_list()
             // Đọc dữ liệu
             fscanf(fp, "%s", username);
             fscanf(fp, "%s", password);
-            fscanf(fp, "%d", &status);
+            fscanf(fp, "%d", &is_signed_in);
 
             // Kiểm tra dòng trống
             if (strlen(username) == 0)

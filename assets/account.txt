@@ -13,5 +13,7 @@ nghia2 1 0
 manh 1 0
 manh2 1 0
 hoa 1 0
-hoa2 1 0
 chien 1 0
+tien 1 0
+duong 1 0
+hoai 1 0

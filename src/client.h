@@ -87,13 +87,25 @@ int signup(int client_socket, char *username, char *password);
  */
 int login(int client_socket, char *username, char *password);
 
-//* Chức năng sau đăng nhập
 /**
+ * Chức năng sau đăng nhập
  * Cho người dùng nhập lựa chọn, thực hiện chức năng tương ứng
  * Phân luồng đọc-ghi
  * @param client_socket socket đã kết nối đến server
  */
 void user_use(int client_socket);
+
+/**
+ * Cho người thực hiện chức năng kết bạn
+ * @param pkg gói tin gửi request yêu cầu kết bạn
+ */
+int add_friend(int client_socket);
+
+/**
+ * Cho người thực hiện chức năng xóa kết bạn
+ * @param pkg gói tin gửi request yêu cầu kết bạn
+ */
+int delete_friend(int client_socket);
 
 /**
  * Đọc nội dung tin nhắn

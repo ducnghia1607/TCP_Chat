@@ -13,6 +13,8 @@ int is_done;
 sqlite3 *database;
 char **resultp;
 int nrow, ncolumn;
+char *friendsPtr;
+// char *friends[MAX_FRIEND_SIZE];
 
 //* ----------------------- SIGNAL HANDLERS -----------------------
 //* login window
@@ -244,6 +246,156 @@ void on_invite_to_group_confirm_btn_clicked(GtkButton *btn, gpointer data)
     gtk_widget_destroy(invite_to_group_dialog);
 }
 
+//------------------ Friend Section ----------------------
+void on_friend_request_btn_clicked(GtkButton *btn, gpointer data)
+{
+
+    int client_socket = *((int *)data);
+    show_friend_dialog((int *)data);
+    // notif_dialog(GTK_WINDOW(main_window), NOT_IN_GROUP_ROOM_NOTIF);
+}
+
+void on_show_list_friend_btn_clicked(GtkButton *btn, gpointer data)
+{
+    int client_socket = *((int *)data);
+    int result = 0;
+
+    // get username
+    const gchar *str1 = gtk_label_get_text(GTK_LABEL(cur_user_label));
+    char username[30], str3[30];
+    sscanf((char *)str1, "%s %s", str3, username);
+
+    // friendsPtr = get_friends_list(username);
+    // send to server for checking
+    pkg.ctrl_signal = GET_FRIENDS_LIST;
+    strcpy(pkg.msg, username);
+    send(client_socket, &pkg, sizeof(pkg), 0);
+
+    recv(client_socket, &pkg, sizeof(pkg), 0);
+    notif_dialog(GTK_WINDOW(main_window), pkg.msg);
+}
+
+void on_add_friend_btn_clicked(GtkButton *btn, gpointer data)
+{
+    int client_socket = *((int *)data);
+    int result = 0;
+
+    // get username
+    const gchar *str1 = gtk_label_get_text(GTK_LABEL(cur_user_label));
+
+    const gchar *str2 = gtk_entry_get_text(GTK_ENTRY(friend_name_entry));
+    // char *sender = (char *)str1;
+    char sender[30], str3[30];
+    sscanf((char *)str1, "%s %s", str3, sender);
+    char *receiver = (char *)str2;
+
+    if (strcmp(sender, receiver) != 0)
+    {
+
+        int is_existed = check_friends_table(sender, receiver);
+        if (is_existed != 0)
+        {
+            char str[100];
+            sprintf(str, "Bạn đã kết bạn với %s rồi", receiver);
+            notif_dialog(GTK_WINDOW(main_window), str);
+        }
+        else
+        {
+            // send to server for checking
+            pkg.ctrl_signal = ADD_FRIEND;
+            strcpy(pkg.sender, sender);
+            strcpy(pkg.receiver, receiver);
+
+            send(client_socket, &pkg, sizeof(pkg), 0);
+            recv(client_socket, &pkg, sizeof(pkg), 0);
+
+            result = pkg.ctrl_signal;
+
+            // checking result
+            if (result == NOT_ONLINE)
+            {
+                notif_dialog(GTK_WINDOW(main_window), NOT_ONLINE_NOTIF);
+            }
+            else if (result == ERR_INVALID_RECEIVER)
+            {
+                notif_dialog(GTK_WINDOW(main_window), NOT_FOUND_USER_NOTIF);
+            }
+            else
+            {
+                notif_dialog(GTK_WINDOW(main_window), ADD_FRIEND_SUCC_NOTIF);
+            }
+        }
+    }
+
+    else
+    {
+        notif_dialog(GTK_WINDOW(main_window), "Bạn không thể kết bạn với chính mình");
+    }
+}
+
+void on_accept_friend_request_btn_clicked(GtkButton *btn, gpointer data)
+{
+    Package *accept_pkg = (Package *)data;
+    // int result = 0;
+    int socket_connect = accept_pkg->ctrl_signal;
+    accept_pkg->ctrl_signal = ACCEPT_FRIEND_REQUEST;
+    // send(socket_connect, &accept_pkg, sizeof(accept_pkg), 0);
+    char str[1024];
+    sprintf(str, "Sender : %s Receiver: %s Signal:%d,connect:%d", accept_pkg->sender, accept_pkg->receiver, accept_pkg->ctrl_signal, socket_connect);
+    send(socket_connect, accept_pkg, sizeof(*accept_pkg), 0);
+    notif_dialog(GTK_WINDOW(main_window), str);
+}
+
+void on_delete_friend_btn_clicked(GtkButton *btn, gpointer data)
+{
+    int client_socket = *((int *)data);
+    int result = 0;
+
+    // get username
+    const gchar *str1 = gtk_label_get_text(GTK_LABEL(cur_user_label));
+
+    const gchar *str2 = gtk_entry_get_text(GTK_ENTRY(friend_name_entry));
+    char sender[30], str3[30];
+    sscanf((char *)str1, "%s %s", str3, sender);
+    char *receiver = (char *)str2;
+
+    if (strcmp(sender, receiver) != 0)
+    {
+
+        int is_existed = check_friends_table(sender, receiver);
+        if (is_existed != 0)
+        {
+            pkg.ctrl_signal = DELETE_FRIEND;
+            strcpy(pkg.sender, sender);
+            strcpy(pkg.receiver, receiver);
+            send(client_socket, &pkg, sizeof(pkg), 0);
+            recv(client_socket, &pkg, sizeof(pkg), 0);
+
+            result = pkg.ctrl_signal;
+            if (result == ERR_INVALID_RECEIVER)
+            {
+                notif_dialog(GTK_WINDOW(main_window), NOT_FOUND_USER_NOTIF);
+            }
+            else
+            {
+                // Delete from database
+                remove_friend(sender, receiver);
+                notif_dialog(GTK_WINDOW(main_window), "Xóa bạn thành công !");
+            }
+        }
+        else
+        {
+            char str[100];
+            sprintf(str, "Thất bại ! Bạn chưa kết bạn với %s", receiver);
+            notif_dialog(GTK_WINDOW(main_window), str);
+        }
+    }
+
+    else
+    {
+        notif_dialog(GTK_WINDOW(main_window), "Bạn không thể hủy kết bạn với chính mình");
+    }
+}
 //* ----------------------- UTILITY FUNCTIONS -----------------------
 void view_chat_history()
 {
@@ -410,6 +562,9 @@ void show_main_window(int *client_socket_pt)
     send_entry = GTK_WIDGET(gtk_builder_get_object(builder, "send_entry"));
     send_btn = GTK_WIDGET(gtk_builder_get_object(builder, "send_btn"));
 
+    friend_request_btn = GTK_WIDGET(gtk_builder_get_object(builder, "friend_request_btn"));
+    show_list_friend_btn = GTK_WIDGET(gtk_builder_get_object(builder, "show_list_friend_btn"));
+
     // load main window's signal handlers
     g_signal_connect(main_window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
     g_signal_connect(logout_btn, "clicked", G_CALLBACK(on_logout_btn_clicked), client_socket_pt);
@@ -420,6 +575,9 @@ void show_main_window(int *client_socket_pt)
     g_signal_connect(group_invite_btn, "clicked", G_CALLBACK(on_group_invite_btn_clicked), client_socket_pt);
     g_signal_connect(group_info_btn, "clicked", G_CALLBACK(on_group_info_btn_clicked), client_socket_pt);
     g_signal_connect(group_leave_btn, "clicked", G_CALLBACK(on_group_leave_btn_clicked), client_socket_pt);
+
+    g_signal_connect(friend_request_btn, "clicked", G_CALLBACK(on_friend_request_btn_clicked), client_socket_pt);
+    g_signal_connect(show_list_friend_btn, "clicked", G_CALLBACK(on_show_list_friend_btn_clicked), client_socket_pt);
 
     // create read handler
     g_thread_new("recv_handler", recv_handler, client_socket_pt);
@@ -523,6 +681,50 @@ void show_group_info_dialog()
     gtk_widget_show_all(group_info_dialog);
 }
 
+// Show dialog add friend / delete friend dialog
+void show_friend_dialog(int *client_socket_pt)
+{
+    builder = gtk_builder_new_from_file("../views/friend_dialog.glade");
+
+    friend_dialog = GTK_WIDGET(gtk_builder_get_object(builder, "friend_dialog"));
+    friend_box = GTK_WIDGET(gtk_builder_get_object(builder, "friend_box"));
+    friend_name_box = GTK_WIDGET(gtk_builder_get_object(builder, "friend_name_box"));
+    friend_name_entry = GTK_WIDGET(gtk_builder_get_object(builder, "friend_name_entry"));
+    friend_btn_box = GTK_WIDGET(gtk_builder_get_object(builder, "friend_btn_box "));
+    add_friend_btn = GTK_WIDGET(gtk_builder_get_object(builder, "add_friend_btn"));
+    delete_friend_btn = GTK_WIDGET(gtk_builder_get_object(builder, "delete_friend_btn"));
+    exit_friend_btn = GTK_WIDGET(gtk_builder_get_object(builder, "exit_friend_btn"));
+
+    g_signal_connect_swapped(main_window, "destroy", G_CALLBACK(gtk_widget_destroy), friend_dialog);
+    g_signal_connect_swapped(exit_friend_btn, "clicked", G_CALLBACK(gtk_widget_destroy), friend_dialog);
+    g_signal_connect(add_friend_btn, "clicked", G_CALLBACK(on_add_friend_btn_clicked), client_socket_pt);
+    g_signal_connect(delete_friend_btn, "clicked", G_CALLBACK(on_delete_friend_btn_clicked), client_socket_pt);
+
+    gtk_widget_show_all(friend_dialog);
+}
+
+void show_friend_request_dialog(int *client_socket_pt, Package *pkg)
+{
+    builder = gtk_builder_new_from_file("../views/friend_request_dialog.glade");
+
+    friend_request_dialog = GTK_WIDGET(gtk_builder_get_object(builder, "friend_request_dialog"));
+    friend_request_box = GTK_WIDGET(gtk_builder_get_object(builder, "friend_request_box"));
+    friend_request_btn_box = GTK_WIDGET(gtk_builder_get_object(builder, "friend_request_btn_box"));
+    accept_friend_request_btn = GTK_WIDGET(gtk_builder_get_object(builder, "accept_friend_request_btn"));
+    decline_friend_request_btn = GTK_WIDGET(gtk_builder_get_object(builder, "decline_friend_request_btn"));
+    friend_request_text = GTK_WIDGET(gtk_builder_get_object(builder, "friend_request_text"));
+
+    pkg->ctrl_signal = *client_socket_pt;
+    g_signal_connect_swapped(main_window, "destroy", G_CALLBACK(gtk_widget_destroy), friend_dialog);
+    g_signal_connect_swapped(decline_friend_request_btn, "clicked", G_CALLBACK(gtk_widget_destroy), friend_request_dialog);
+    g_signal_connect(accept_friend_request_btn, "clicked", G_CALLBACK(on_accept_friend_request_btn_clicked), pkg);
+
+    char text[MAX_SQL_SIZE];
+    sprintf(text, "%s đã gửi lời mời kết bạn cho bạn", pkg->sender);
+    gtk_label_set_text(GTK_LABEL(friend_request_text), text);
+    gtk_widget_show_all(friend_request_dialog);
+}
+
 gpointer recv_handler(gpointer data)
 {
     int *c_socket = (int *)data;
@@ -569,6 +771,17 @@ gpointer recv_handler(gpointer data)
         // case GROUP_CHAT_INIT:
         //     printf("%s\n", pkg.msg);
         //     break;
+        case SEND_FRIEND_REQUEST:
+            pkg.ctrl_signal = client_socket;
+            gdk_threads_add_idle(recv_friend_request, &pkg);
+            break;
+            // show_friend_request_dialog(&client_socket, &pkg);
+            // is_done = 1;
+        case ACCEPT_FRIEND_REQUEST:
+            char *msg;
+            sprintf(msg, "%s đã chấp nhận lời mời kết bạn !", pkg.receiver);
+            notif_dialog(GTK_WINDOW(main_window), msg);
+            break;
         case SHOW_GROUP:
             gdk_threads_add_idle(recv_show_group, pkg.msg);
             break;
@@ -605,14 +818,6 @@ gpointer recv_handler(gpointer data)
             break;
         case GROUP_CHAT:
             gdk_threads_add_idle(recv_group_chat, &pkg);
-            // if (curr_group_id == pkg.group_id)
-            // {
-            //     printf("%s: %s\n", pkg.sender, pkg.msg);
-            // }
-            // else
-            // {
-            //     printf("%s sent to Group_%d: %s\n", pkg.sender, pkg.group_id, pkg.msg);
-            // }
             break;
         case SHOW_GROUP_INFO_START:
             gdk_threads_add_idle(recv_show_group_info_start, NULL);
@@ -645,6 +850,27 @@ gpointer recv_handler(gpointer data)
     }
 
     return NULL;
+}
+
+gboolean recv_friend_request(gpointer data)
+{
+    Package *pkg = (Package *)data;
+    int conn_socket = pkg->ctrl_signal;
+
+    g_mutex_lock(&ui_mutex);
+
+    // show_friend_request_dialog(&conn_socket, pkg);
+    char str[MAX_SQL_SIZE];
+    sprintf(str, "\n Sender: %s Receiver : %s Signal:%d Socket:%d \n", pkg->sender, pkg->receiver, pkg->ctrl_signal, conn_socket);
+    notif_dialog(GTK_WINDOW(main_window), str);
+    show_friend_request_dialog(&conn_socket, pkg);
+
+    // task is done
+    is_done = 1;
+
+    g_mutex_unlock(&ui_mutex);
+
+    return FALSE;
 }
 
 gboolean recv_show_user(gpointer data)
