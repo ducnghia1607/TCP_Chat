@@ -189,6 +189,7 @@ void show_friend_dialog(int *client_socket_pt);
 void show_friend_request_dialog(int *client_socket_pt, Package *pkg);
 
 gboolean recv_friend_request(gpointer data);
+gboolean recv_show_active_friend(gpointer data);
 
 gpointer recv_handler(gpointer data);
 gboolean recv_show_user(gpointer data);

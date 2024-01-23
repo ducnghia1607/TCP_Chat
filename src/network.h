@@ -73,6 +73,8 @@
 #define ACCEPT_DELETE_FRIEND 513
 
 #define GET_FRIENDS_LIST 514
+
+#define SHOW_ACTIVE_FRIEND 515
 #define TESTING_MSG "#sys_testing#"
 
 //* Cấu trúc gói tin

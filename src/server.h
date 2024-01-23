@@ -102,7 +102,7 @@ void sv_delete_friend(int conn_socket, Package *pkg);
 
 void sv_get_friends_list(int conn_socket, Package *pkg);
 char *removeNewline(char *inputString);
-
+void sv_active_friend(int conn_socket, Package *pkg);
 /**
  * Search user by conn_socket
  * @param conn_socket socket kết nối đến client

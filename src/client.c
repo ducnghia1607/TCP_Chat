@@ -223,12 +223,20 @@ int check_public_key(int client_socket, char *username)
     }
 }
 
-void see_active_user(int client_socket)
+// void see_active_user(int client_socket)
+// {
+//     Package pkg;
+//     pkg.ctrl_signal = SHOW_USER;
+//     send(client_socket, &pkg, sizeof(pkg), 0);
+
+// }
+
+void see_active_friend(int client_socket)
 {
     Package pkg;
-    pkg.ctrl_signal = SHOW_USER;
+    pkg.ctrl_signal = SHOW_ACTIVE_FRIEND;
+    strcpy(pkg.msg, my_username);
     send(client_socket, &pkg, sizeof(pkg), 0);
-
     // sleep(1);
     // recv(client_socket, &pkg, sizeof(pkg), 0);
 }

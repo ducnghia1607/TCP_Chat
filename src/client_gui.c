@@ -94,7 +94,8 @@ void on_refresh_list_btn_clicked(GtkButton *btn, gpointer data)
 {
 
     int client_socket = *((int *)data);
-    see_active_user(client_socket);
+    // see_active_user(client_socket);
+    see_active_friend(client_socket);
     show_group(client_socket);
 }
 
@@ -591,7 +592,8 @@ void show_main_window(int *client_socket_pt)
     // default cur chat
     gtk_label_set_text(GTK_LABEL(cur_chat_label), DEFAULT_CUR_CHAT_LABEL);
     // show currently online users
-    see_active_user(*client_socket_pt);
+    // see_active_user(*client_socket_pt);
+    see_active_friend(*client_socket_pt);
     // show groups that user is in
     show_group(*client_socket_pt);
     // make text view not editable
@@ -742,8 +744,11 @@ gpointer recv_handler(gpointer data)
         switch (pkg.ctrl_signal)
         {
 
-        case SHOW_USER:
-            gdk_threads_add_idle(recv_show_user, pkg.msg);
+        // case SHOW_USER:
+        //     gdk_threads_add_idle(recv_show_user, pkg.msg);
+        //     break;
+        case SHOW_ACTIVE_FRIEND:
+            gdk_threads_add_idle(recv_show_active_friend, pkg.msg);
             break;
 
         case PRIVATE_CHAT:
@@ -873,7 +878,7 @@ gboolean recv_friend_request(gpointer data)
     return FALSE;
 }
 
-gboolean recv_show_user(gpointer data)
+gboolean recv_show_active_friend(gpointer data)
 {
 
     char *str = (char *)data;
@@ -920,6 +925,52 @@ gboolean recv_show_user(gpointer data)
     return FALSE;
 }
 
+// gboolean recv_show_user(gpointer data)
+// {
+
+//     char *str = (char *)data;
+//     char text[USERNAME_SIZE];
+//     int i = -1;
+//     int j;
+
+//     g_mutex_lock(&ui_mutex);
+
+//     // delete old content
+//     delete_textview_content(GTK_TEXT_VIEW(online_tv));
+
+//     // add new user list
+//     while (1)
+//     {
+
+//         j = i + 1;
+//         if (str[j] == ' ' || str[j] == '\0')
+//             break;
+
+//         i++;
+//         while (str[i] != ' ' && str[i] != '\0')
+//             i++;
+
+//         memset(text, '\0', sizeof(text));
+//         strncpy(text, str + j, i - j);
+//         insert_to_textview(GTK_TEXT_VIEW(online_tv), text);
+//         insert_to_textview(GTK_TEXT_VIEW(online_tv), NEWLINE);
+
+//         if (str[i] == '\0')
+//             break;
+//     }
+
+//     // scroll to bottom
+//     while (gtk_events_pending())
+//         gtk_main_iteration();
+//     scroll_window_to_bottom(GTK_SCROLLED_WINDOW(online_sw));
+
+//     // task is done
+//     is_done = 1;
+
+//     g_mutex_unlock(&ui_mutex);
+
+//     return FALSE;
+// }
 gboolean recv_show_group(gpointer data)
 {
 

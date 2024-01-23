@@ -118,6 +118,7 @@ void *read_msg(void *param);
  * @param client_socket socket đã kết nối đến server
  */
 void see_active_user(int client_socket);
+void see_active_friend(int client_socket);
 
 /**
  * Chat riêng:

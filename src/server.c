@@ -11,6 +11,7 @@ Account *acc_list;
 char *my_username;
 Public_key_users pub[512];
 int pubkey_count = 0;
+char active_friend[MSG_SIZE];
 
 int create_listen_socket()
 {
@@ -261,10 +262,12 @@ void sv_user_use(int conn_socket)
             sv_chat_all(conn_socket, &pkg);
             break;
 
-        case SHOW_USER:
-            sv_active_user(conn_socket, &pkg);
+        // case SHOW_USER:
+        //     sv_active_user(conn_socket, &pkg);
+        //     break;
+        case SHOW_ACTIVE_FRIEND:
+            sv_active_friend(conn_socket, &pkg);
             break;
-
         case LOG_OUT:
             login = 0;
             sv_logout(conn_socket, &pkg);
@@ -426,9 +429,7 @@ void sv_get_friends_list(int conn_socket, Package *pkg)
     char *username = pkg->msg;
     char *friends_list = get_friends_list(username);
     int num_of_friends = 0;
-    char line1[10];
-    char line2[120];
-
+    char line1[20] = {0};
     char *curLine = friends_list;
     char *nextLine = strchr(curLine, '\n');
     if (nextLine)
@@ -468,6 +469,8 @@ void sv_get_friends_list(int conn_socket, Package *pkg)
             if (target_acc->is_signed_in == 1)
             {
                 status = "Online";
+                strcat(active_friend, target_acc->username);
+                strcat(active_friend, " ");
             }
             else
             {
@@ -487,20 +490,28 @@ void sv_get_friends_list(int conn_socket, Package *pkg)
     send(conn_socket, pkg, sizeof(*pkg), 0);
 }
 
-void sv_active_user(int conn_socket, Package *pkg)
-{
+// void sv_active_user(int conn_socket, Package *pkg)
+// {
 
-    char user_list[MSG_SIZE] = {0};
-    for (int i = 0; i < MAX_USER; i++)
-    {
-        if (user[i].socket > 0)
-        {
-            strcat(user_list, user[i].username);
-            int len = strlen(user_list);
-            user_list[len] = ' ';
-        }
-    }
-    strcpy(pkg->msg, user_list);
+//     char user_list[MSG_SIZE] = {0};
+//     for (int i = 0; i < MAX_USER; i++)
+//     {
+//         if (user[i].socket > 0)
+//         {
+//             strcat(user_list, user[i].username);
+//             int len = strlen(user_list);
+//             user_list[len] = ' ';
+//         }
+//     }
+//     strcpy(pkg->msg, user_list);
+//     send(conn_socket, pkg, sizeof(*pkg), 0);
+// }
+
+void sv_active_friend(int conn_socket, Package *pkg)
+{
+    memset(active_friend, '\0', sizeof(active_friend));
+    sv_get_friends_list(conn_socket, pkg);
+    strcpy(pkg->msg, active_friend);
     send(conn_socket, pkg, sizeof(*pkg), 0);
 }
 
