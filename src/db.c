@@ -293,8 +293,6 @@ int callback(void *data, int argc, char **argv,
         }
     }
     strcat(str, "\n");
-    // printf("\nfriends[0]:%s\n", friends[0]);
-    // printf("\nfriends[1]:%s\n", friends[1]);
 
     sprintf(friends_list, "%d\n", num_of_friends);
     strcat(friends_list, str);

@@ -440,14 +440,12 @@ void sv_get_friends_list(int conn_socket, Package *pkg)
     curLine = nextLine ? (nextLine + 1) : NULL;
 
     num_of_friends = *((int *)line1);
-    printf("num_of_friends:%d\n", num_of_friends);
     int num = 0;
     while (curLine)
     {
         char *nextLine = strchr(curLine, '\n');
         if (nextLine)
             *nextLine = '\0'; // temporarily terminate the current line
-        printf("curLine=[%s*****]\n", curLine);
         friends[num] = removeNewline(curLine);
         num++;
         if (nextLine)
@@ -460,12 +458,10 @@ void sv_get_friends_list(int conn_socket, Package *pkg)
     Account *target_acc;
     for (int i = 0; i < num; i++)
     {
-        // printf("In target");
         target_acc = find_account(acc_list, friends[i]);
         if (target_acc)
         {
 
-            printf("In target account");
             if (target_acc->is_signed_in == 1)
             {
                 status = "Online";
@@ -483,9 +479,8 @@ void sv_get_friends_list(int conn_socket, Package *pkg)
         }
     }
 
-    printf("\nmessage: %s\n", msg);
-    // free(target_acc);
-    // free(status);
+    // printf("\nmessage: %s\n", msg);
+
     strcpy(pkg->msg, msg);
     send(conn_socket, pkg, sizeof(*pkg), 0);
 }
@@ -692,6 +687,7 @@ void sv_group_chat_init(int conn_socket, Package *pkg)
 void sv_show_group(int conn_socket, Package *pkg)
 {
     int user_id = search_user(conn_socket);
+
     char group_list[MSG_SIZE] = {0};
     int group_id;
     for (int i = 0; i < MAX_GROUP; i++)
@@ -719,6 +715,7 @@ int check_user_in_group(Active_user user, int group_id)
     }
     return 0;
 }
+
 int sv_add_group_user(Active_user *user, int group_id)
 {
     for (int i = 0; i < MAX_GROUP; i++)
@@ -763,6 +760,8 @@ void sv_new_group(int conn_socket, Package *pkg)
 {
     int user_id = search_user(conn_socket);
     int group_id = -1;
+    printf("%s", pkg->msg);
+    char group_name[MSG_SIZE] = {0};
     for (int i = 0; i < MAX_GROUP; i++)
     {
         if (group[i].curr_num == 0)
@@ -770,7 +769,8 @@ void sv_new_group(int conn_socket, Package *pkg)
             group_id = i;
             sv_add_group_user(&user[user_id], group_id);
             sv_add_user(user[user_id], &group[i]);
-            sprintf(group[i].group_name, "Group_%d", group_id);
+            // sprintf(group[i].group_name, "Group_%d", group_id);
+            strcpy(group[i].group_name, pkg->msg);
             break;
         }
     }

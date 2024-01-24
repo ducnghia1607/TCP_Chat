@@ -158,7 +158,7 @@ void show_group(int client_socket);
  * - ...
  * @param client_socket socket đã kết nối đến server
  */
-void new_group(int client_socket);
+void new_group(int client_socket, char *group_name);
 
 /**
  * Join group:

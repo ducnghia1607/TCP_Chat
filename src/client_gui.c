@@ -222,7 +222,8 @@ void on_join_group_create_btn_clicked(GtkButton *btn, gpointer data)
 {
 
     int client_socket = *((int *)data);
-    new_group(client_socket);
+    const gchar *group_name = gtk_entry_get_text(GTK_ENTRY(join_group_entry));
+    new_group(client_socket, (char *)group_name);
     show_group(client_socket);
 }
 
@@ -337,14 +338,13 @@ void on_add_friend_btn_clicked(GtkButton *btn, gpointer data)
 void on_accept_friend_request_btn_clicked(GtkButton *btn, gpointer data)
 {
     Package *accept_pkg = (Package *)data;
-    // int result = 0;
     int socket_connect = accept_pkg->ctrl_signal;
     accept_pkg->ctrl_signal = ACCEPT_FRIEND_REQUEST;
     // send(socket_connect, &accept_pkg, sizeof(accept_pkg), 0);
     char str[1024];
     sprintf(str, "Sender : %s Receiver: %s Signal:%d,connect:%d", accept_pkg->sender, accept_pkg->receiver, accept_pkg->ctrl_signal, socket_connect);
     send(socket_connect, accept_pkg, sizeof(*accept_pkg), 0);
-    notif_dialog(GTK_WINDOW(main_window), str);
+    gtk_widget_destroy(friend_request_dialog);
 }
 
 void on_delete_friend_btn_clicked(GtkButton *btn, gpointer data)

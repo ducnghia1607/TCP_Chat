@@ -390,10 +390,11 @@ void show_group(int client_socket)
 }
 
 // tao group moi
-void new_group(int client_socket)
+void new_group(int client_socket, char *group_name)
 {
     Package pkg;
     pkg.ctrl_signal = NEW_GROUP;
+    strcpy(pkg.msg, group_name);
     send(client_socket, &pkg, sizeof(pkg), 0);
 }
 
